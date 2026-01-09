@@ -1,20 +1,135 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的手機網頁</title>
+    <title>台南即時資訊看板</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f0f0f0; }
-        h1 { color: #333; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            width: 90%;
+            max-width: 400px;
+        }
+        h1 { margin-bottom: 10px; font-size: 24px; }
+        .time-box {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .date-box { font-size: 18px; opacity: 0.9; margin-bottom: 30px; }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .info-card {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+        }
+        .label { font-size: 14px; opacity: 0.8; display: block; margin-bottom: 5px; }
+        .value { font-size: 28px; font-weight: bold; }
+        .unit { font-size: 14px; }
+        
+        /* 空氣品質顏色指示 */
+        .aqi-good { color: #4ade80; } /* 綠 */
+        .aqi-moderate { color: #facc15; } /* 黃 */
+        .aqi-bad { color: #f87171; } /* 紅 */
+        
+        .loading { font-size: 14px; opacity: 0.7; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Hello! 這是用手機做出來的網頁</h1>
-        <p>GitHub Pages 測試成功！</p>
-        <p>我可以開始在這裡寫自我介紹了。</p>
+
+    <div class="container">
+        <h1>📍 台南 Tainan</h1>
+        
+        <div class="date-box" id="date">Loading...</div>
+        <div class="time-box" id="time">--:--</div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <span class="label">🌡️ 氣溫</span>
+                <span class="value" id="temp">--</span>
+                <span class="unit">°C</span>
+            </div>
+            <div class="info-card">
+                <span class="label">🍃 空氣品質 (AQI)</span>
+                <span class="value" id="aqi">--</span>
+                <span class="unit" id="aqi-text"></span>
+            </div>
+        </div>
+        <p style="margin-top:20px; font-size:12px; opacity:0.6;">資料來源: Open-Meteo</p>
     </div>
+
+    <script>
+        // 1. 更新時間與日期
+        function updateTime() {
+            const now = new Date();
+            // 時間
+            document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            // 日期
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('date').innerText = now.toLocaleDateString('zh-TW', options);
+        }
+
+        // 2. 抓取台南天氣與空氣品質 (經緯度: 22.99, 120.21)
+        async function fetchData() {
+            try {
+                // 抓氣溫
+                const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.9908&longitude=120.2133&current=temperature_2m&timezone=auto');
+                const weatherData = await weatherRes.json();
+                document.getElementById('temp').innerText = weatherData.current.temperature_2m;
+
+                // 抓 AQI (空氣品質)
+                const airRes = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=22.9908&longitude=120.2133&current=us_aqi&timezone=auto');
+                const airData = await airRes.json();
+                const aqi = airData.current.us_aqi;
+                
+                const aqiElem = document.getElementById('aqi');
+                const aqiTextElem = document.getElementById('aqi-text');
+                
+                aqiElem.innerText = aqi;
+
+                // 簡單判斷 AQI 顏色
+                aqiElem.className = 'value'; // 重置
+                if (aqi <= 50) {
+                    aqiElem.classList.add('aqi-good');
+                    aqiTextElem.innerText = "良好";
+                } else if (aqi <= 100) {
+                    aqiElem.classList.add('aqi-moderate');
+                    aqiTextElem.innerText = "普通";
+                } else {
+                    aqiElem.classList.add('aqi-bad');
+                    aqiTextElem.innerText = "不佳";
+                }
+
+            } catch (error) {
+                console.error("資料抓取失敗:", error);
+            }
+        }
+
+        // 啟動
+        setInterval(updateTime, 1000); // 每秒更新時間
+        updateTime(); // 立即執行一次
+        fetchData(); // 立即抓取資料
+    </script>
 </body>
 </html>
