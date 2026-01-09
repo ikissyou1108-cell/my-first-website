@@ -30,13 +30,14 @@
         }
         h1 { margin: 0 0 15px 0; font-size: 22px; font-weight: 600; letter-spacing: 1px;}
         
-        /* 時間區塊 */
+        /* 時間區塊：字體稍微縮小一點點以免秒數換行 */
         .time-box {
-            font-size: 52px;
+            font-size: 42px; /* 稍微縮小以容納秒數 */
             font-weight: 700;
             margin: 10px 0;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
             line-height: 1;
+            font-feature-settings: "tnum"; /* 讓數字等寬，秒數跳動時不會左右晃 */
         }
         .date-box { font-size: 16px; opacity: 0.9; margin-bottom: 25px; }
 
@@ -82,7 +83,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #4285F4; /* Google Maps Blue */
+            background: #4285F4;
             color: white;
             text-decoration: none;
             padding: 12px;
@@ -104,7 +105,7 @@
         <h1>📍 台南 Tainan</h1>
         
         <div class="date-box" id="date">載入中...</div>
-        <div class="time-box" id="time">--:--</div>
+        <div class="time-box" id="time">--:--:--</div>
 
         <div class="info-grid">
             <div class="info-card">
@@ -125,27 +126,34 @@
 
         <div class="traffic-section">
             <span class="traffic-title">🚗 上班路況 (東區 ➔ 南科)</span>
-            <a href="https://www.google.com/maps/dir/?api=1&origin=台南市東區&destination=南部科學園區&travelmode=driving" 
+            <a href="https://www.google.com/maps/dir/台南市東區/南部科學園區" 
                target="_blank" 
                class="traffic-btn">
                <span class="traffic-icon">🗺️</span> 開啟導航/看塞車
             </a>
-            <p style="font-size: 11px; opacity: 0.6; margin-top: 8px;">點擊將開啟 Google Maps 顯示即時紅線路況</p>
+            <p style="font-size: 11px; opacity: 0.6; margin-top: 8px;">點擊開啟 Google Maps 查看即時路況</p>
         </div>
 
         <div class="footer">資料來源: Open-Meteo</div>
     </div>
 
     <script>
-        // 1. 更新時間
+        // 1. 更新時間 (包含秒數)
         function updateTime() {
             const now = new Date();
-            document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            // 加上 second: '2-digit' 讓它顯示秒數
+            document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
             document.getElementById('date').innerText = now.toLocaleDateString('zh-TW', options);
         }
 
-        // 2. 抓取天氣資料 (台南座標)
+        // 2. 抓取天氣資料
         async function fetchData() {
             try {
                 // 抓氣溫
@@ -179,7 +187,7 @@
             }
         }
 
-        setInterval(updateTime, 1000);
+        setInterval(updateTime, 1000); // 每秒更新
         updateTime();
         fetchData();
     </script>
