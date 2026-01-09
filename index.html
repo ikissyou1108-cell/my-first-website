@@ -3,57 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台南即時資訊看板</title>
+    <title>台南生活資訊板</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .container {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            width: 90%;
-            max-width: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 25px;
+            border-radius: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
         }
-        h1 { margin-bottom: 10px; font-size: 24px; }
+        h1 { margin: 0 0 15px 0; font-size: 22px; font-weight: 600; letter-spacing: 1px;}
+        
+        /* 時間區塊 */
         .time-box {
-            font-size: 48px;
-            font-weight: bold;
-            margin: 20px 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 52px;
+            font-weight: 700;
+            margin: 10px 0;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            line-height: 1;
         }
-        .date-box { font-size: 18px; opacity: 0.9; margin-bottom: 30px; }
+        .date-box { font-size: 16px; opacity: 0.9; margin-bottom: 25px; }
+
+        /* 資訊卡片網格 */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
         .info-card {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.25);
             padding: 15px;
-            border-radius: 15px;
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
-        .label { font-size: 14px; opacity: 0.8; display: block; margin-bottom: 5px; }
-        .value { font-size: 28px; font-weight: bold; }
-        .unit { font-size: 14px; }
+        .label { font-size: 13px; opacity: 0.8; margin-bottom: 5px; }
+        .value { font-size: 24px; font-weight: bold; }
+        .unit { font-size: 12px; opacity: 0.8; }
         
-        /* 空氣品質顏色指示 */
-        .aqi-good { color: #4ade80; } /* 綠 */
-        .aqi-moderate { color: #facc15; } /* 黃 */
-        .aqi-bad { color: #f87171; } /* 紅 */
-        
-        .loading { font-size: 14px; opacity: 0.7; }
+        /* 空氣品質顏色 */
+        .aqi-good { color: #4ade80; } 
+        .aqi-moderate { color: #facc15; } 
+        .aqi-bad { color: #f87171; } 
+
+        /* 路況按鈕區塊 */
+        .traffic-section {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 18px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .traffic-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: block;
+            opacity: 0.9;
+        }
+        .traffic-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #4285F4; /* Google Maps Blue */
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .traffic-btn:active { transform: scale(0.98); }
+        .traffic-icon { margin-right: 8px; font-size: 18px; }
+
+        .footer { margin-top: 20px; font-size: 11px; opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -61,44 +103,57 @@
     <div class="container">
         <h1>📍 台南 Tainan</h1>
         
-        <div class="date-box" id="date">Loading...</div>
+        <div class="date-box" id="date">載入中...</div>
         <div class="time-box" id="time">--:--</div>
 
         <div class="info-grid">
             <div class="info-card">
-                <span class="label">🌡️ 氣溫</span>
-                <span class="value" id="temp">--</span>
-                <span class="unit">°C</span>
+                <span class="label">🌡️ 現在氣溫</span>
+                <div>
+                    <span class="value" id="temp">--</span>
+                    <span class="unit">°C</span>
+                </div>
             </div>
             <div class="info-card">
-                <span class="label">🍃 空氣品質 (AQI)</span>
-                <span class="value" id="aqi">--</span>
-                <span class="unit" id="aqi-text"></span>
+                <span class="label">🍃 空氣品質</span>
+                <div>
+                    <span class="value" id="aqi">--</span>
+                    <span class="unit" id="aqi-text"></span>
+                </div>
             </div>
         </div>
-        <p style="margin-top:20px; font-size:12px; opacity:0.6;">資料來源: Open-Meteo</p>
+
+        <div class="traffic-section">
+            <span class="traffic-title">🚗 上班路況 (東區 ➔ 南科)</span>
+            <a href="https://www.google.com/maps/dir/?api=1&origin=台南市東區&destination=南部科學園區&travelmode=driving" 
+               target="_blank" 
+               class="traffic-btn">
+               <span class="traffic-icon">🗺️</span> 開啟導航/看塞車
+            </a>
+            <p style="font-size: 11px; opacity: 0.6; margin-top: 8px;">點擊將開啟 Google Maps 顯示即時紅線路況</p>
+        </div>
+
+        <div class="footer">資料來源: Open-Meteo</div>
     </div>
 
     <script>
-        // 1. 更新時間與日期
+        // 1. 更新時間
         function updateTime() {
             const now = new Date();
-            // 時間
-            document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            // 日期
+            document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
             document.getElementById('date').innerText = now.toLocaleDateString('zh-TW', options);
         }
 
-        // 2. 抓取台南天氣與空氣品質 (經緯度: 22.99, 120.21)
+        // 2. 抓取天氣資料 (台南座標)
         async function fetchData() {
             try {
                 // 抓氣溫
                 const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.9908&longitude=120.2133&current=temperature_2m&timezone=auto');
                 const weatherData = await weatherRes.json();
-                document.getElementById('temp').innerText = weatherData.current.temperature_2m;
+                document.getElementById('temp').innerText = Math.round(weatherData.current.temperature_2m);
 
-                // 抓 AQI (空氣品質)
+                // 抓 AQI
                 const airRes = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=22.9908&longitude=120.2133&current=us_aqi&timezone=auto');
                 const airData = await airRes.json();
                 const aqi = airData.current.us_aqi;
@@ -107,29 +162,26 @@
                 const aqiTextElem = document.getElementById('aqi-text');
                 
                 aqiElem.innerText = aqi;
-
-                // 簡單判斷 AQI 顏色
-                aqiElem.className = 'value'; // 重置
+                aqiElem.className = 'value'; 
+                
                 if (aqi <= 50) {
                     aqiElem.classList.add('aqi-good');
-                    aqiTextElem.innerText = "良好";
+                    aqiTextElem.innerText = "優";
                 } else if (aqi <= 100) {
                     aqiElem.classList.add('aqi-moderate');
-                    aqiTextElem.innerText = "普通";
+                    aqiTextElem.innerText = "普";
                 } else {
                     aqiElem.classList.add('aqi-bad');
-                    aqiTextElem.innerText = "不佳";
+                    aqiTextElem.innerText = "差";
                 }
-
             } catch (error) {
-                console.error("資料抓取失敗:", error);
+                console.error("資料錯誤", error);
             }
         }
 
-        // 啟動
-        setInterval(updateTime, 1000); // 每秒更新時間
-        updateTime(); // 立即執行一次
-        fetchData(); // 立即抓取資料
+        setInterval(updateTime, 1000);
+        updateTime();
+        fetchData();
     </script>
 </body>
 </html>
