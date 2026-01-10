@@ -28,20 +28,20 @@
             max-width: 380px;
             text-align: center;
         }
-        h1 { margin: 0 0 15px 0; font-size: 22px; font-weight: 600; letter-spacing: 1px;}
+        h1 { margin: 0 0 10px 0; font-size: 20px; font-weight: 600; letter-spacing: 1px;}
         
-        /* 時間區塊：字體稍微縮小一點點以免秒數換行 */
+        /* 時間區塊 */
         .time-box {
-            font-size: 42px; /* 稍微縮小以容納秒數 */
+            font-size: 42px;
             font-weight: 700;
-            margin: 10px 0;
+            margin: 5px 0 10px 0;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
             line-height: 1;
-            font-feature-settings: "tnum"; /* 讓數字等寬，秒數跳動時不會左右晃 */
+            font-feature-settings: "tnum";
         }
-        .date-box { font-size: 16px; opacity: 0.9; margin-bottom: 25px; }
+        .date-box { font-size: 15px; opacity: 0.9; margin-bottom: 20px; }
 
-        /* 資訊卡片網格 */
+        /* 即時資訊卡片 */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -50,34 +50,62 @@
         }
         .info-card {
             background: rgba(0, 0, 0, 0.25);
-            padding: 15px;
+            padding: 12px;
             border-radius: 18px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
         }
-        .label { font-size: 13px; opacity: 0.8; margin-bottom: 5px; }
-        .value { font-size: 24px; font-weight: bold; }
+        .label { font-size: 12px; opacity: 0.8; margin-bottom: 3px; }
+        .value { font-size: 22px; font-weight: bold; }
         .unit { font-size: 12px; opacity: 0.8; }
         
-        /* 空氣品質顏色 */
         .aqi-good { color: #4ade80; } 
         .aqi-moderate { color: #facc15; } 
         .aqi-bad { color: #f87171; } 
 
-        /* 路況按鈕區塊 */
+        /* 新增：橫向滑動天氣預報 */
+        .hourly-title {
+            text-align: left;
+            font-size: 13px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+            padding-left: 5px;
+        }
+        .hourly-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            /* 隱藏滾動條但保持功能 */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE/Edge */
+        }
+        .hourly-scroll::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+        .hour-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            min-width: 60px; /* 固定寬度 */
+            padding: 10px 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .hour-time { font-size: 12px; opacity: 0.8; margin-bottom: 5px; }
+        .hour-icon { font-size: 20px; margin-bottom: 5px; }
+        .hour-temp { font-size: 16px; font-weight: bold; }
+
+        /* 路況按鈕 */
         .traffic-section {
             background: rgba(255, 255, 255, 0.15);
             border-radius: 18px;
-            padding: 15px;
-            margin-top: 10px;
-        }
-        .traffic-title {
-            font-size: 14px;
-            margin-bottom: 10px;
-            display: block;
-            opacity: 0.9;
+            padding: 12px;
+            margin-top: 5px;
         }
         .traffic-btn {
             display: flex;
@@ -86,17 +114,15 @@
             background: #4285F4;
             color: white;
             text-decoration: none;
-            padding: 12px;
+            padding: 10px;
             border-radius: 12px;
             font-weight: bold;
-            font-size: 16px;
-            transition: transform 0.1s;
+            font-size: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
-        .traffic-btn:active { transform: scale(0.98); }
         .traffic-icon { margin-right: 8px; font-size: 18px; }
 
-        .footer { margin-top: 20px; font-size: 11px; opacity: 0.5; }
+        .footer { margin-top: 20px; font-size: 10px; opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -124,44 +150,81 @@
             </div>
         </div>
 
+        <div class="hourly-title">🕓 未來 24 小時預報 (可滑動)</div>
+        <div class="hourly-scroll" id="hourly-container">
+            <div class="hour-card">
+                <span class="hour-time">--:--</span>
+                <span class="hour-icon">⌛</span>
+                <span class="hour-temp">--°</span>
+            </div>
+        </div>
+
         <div class="traffic-section">
-            <span class="traffic-title">🚗 上班路況 (東區 ➔ 南科)</span>
             <a href="https://www.google.com/maps/dir/台南市東區/南部科學園區" 
                target="_blank" 
                class="traffic-btn">
-               <span class="traffic-icon">🗺️</span> 開啟導航/看塞車
+               <span class="traffic-icon">🚗</span> 東區 ➔ 南科 路況
             </a>
-            <p style="font-size: 11px; opacity: 0.6; margin-top: 8px;">點擊開啟 Google Maps 查看即時路況</p>
         </div>
 
         <div class="footer">資料來源: Open-Meteo</div>
     </div>
 
     <script>
-        // 1. 更新時間 (包含秒數)
+        // 1. 更新時間
         function updateTime() {
             const now = new Date();
-            // 加上 second: '2-digit' 讓它顯示秒數
-            document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { 
-                hour12: false, 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit' 
-            });
-            
+            document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
             document.getElementById('date').innerText = now.toLocaleDateString('zh-TW', options);
         }
 
-        // 2. 抓取天氣資料
+        // 天氣代碼轉 Emoji 輔助函式
+        function getWeatherIcon(code) {
+            if (code === 0) return "☀️"; // 晴
+            if (code >= 1 && code <= 3) return "⛅"; // 多雲
+            if (code >= 45 && code <= 48) return "🌫️"; // 霧
+            if (code >= 51 && code <= 67) return "🌧️"; // 雨
+            if (code >= 80 && code <= 99) return "⛈️"; // 雷雨
+            return "☁️";
+        }
+
+        // 2. 抓取資料
         async function fetchData() {
             try {
-                // 抓氣溫
-                const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.9908&longitude=120.2133&current=temperature_2m&timezone=auto');
+                // 抓取：當前天氣 + 未來2天每小時預報 (確保跨夜也有資料)
+                const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.9908&longitude=120.2133&current=temperature_2m&hourly=temperature_2m,weathercode&forecast_days=2&timezone=auto');
                 const weatherData = await weatherRes.json();
+                
+                // 設定當前氣溫
                 document.getElementById('temp').innerText = Math.round(weatherData.current.temperature_2m);
 
-                // 抓 AQI
+                // --- 處理每小時預報 ---
+                const hourlyContainer = document.getElementById('hourly-container');
+                hourlyContainer.innerHTML = ""; // 清空載入中狀態
+
+                const currentHourIndex = new Date().getHours(); // 取得現在幾點 (0-23)
+                // 從 API 陣列中，從「現在」這個小時開始，往後抓 24 筆資料
+                for (let i = currentHourIndex; i < currentHourIndex + 24; i++) {
+                    const timeStr = weatherData.hourly.time[i]; // 格式: "2024-01-01T14:00"
+                    const temp = Math.round(weatherData.hourly.temperature_2m[i]);
+                    const code = weatherData.hourly.weathercode[i];
+                    
+                    // 從時間字串取出 "14:00"
+                    const hourDisplay = timeStr.split('T')[1];
+
+                    // 建立卡片 HTML
+                    const card = document.createElement('div');
+                    card.className = 'hour-card';
+                    card.innerHTML = `
+                        <span class="hour-time">${hourDisplay}</span>
+                        <span class="hour-icon">${getWeatherIcon(code)}</span>
+                        <span class="hour-temp">${temp}°</span>
+                    `;
+                    hourlyContainer.appendChild(card);
+                }
+
+                // 抓取 AQI
                 const airRes = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=22.9908&longitude=120.2133&current=us_aqi&timezone=auto');
                 const airData = await airRes.json();
                 const aqi = airData.current.us_aqi;
@@ -182,12 +245,13 @@
                     aqiElem.classList.add('aqi-bad');
                     aqiTextElem.innerText = "差";
                 }
+
             } catch (error) {
                 console.error("資料錯誤", error);
             }
         }
 
-        setInterval(updateTime, 1000); // 每秒更新
+        setInterval(updateTime, 1000);
         updateTime();
         fetchData();
     </script>
