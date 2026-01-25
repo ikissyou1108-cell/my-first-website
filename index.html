@@ -41,7 +41,7 @@
         }
         .date-box { font-size: 15px; opacity: 0.9; margin-bottom: 20px; }
 
-        /* 即時資訊卡片 */
+        /* 資訊卡片網格 (2x2) */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -56,16 +56,21 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            min-height: 80px; /* 統一高度 */
         }
-        .label { font-size: 12px; opacity: 0.8; margin-bottom: 3px; }
+        .label { font-size: 12px; opacity: 0.8; margin-bottom: 5px; }
         .value { font-size: 22px; font-weight: bold; }
         .unit { font-size: 12px; opacity: 0.8; }
         
+        /* 日出日落專用樣式 */
+        .sun-time { font-size: 14px; margin: 2px 0; display: flex; align-items: center; }
+        .sun-icon { margin-right: 5px; font-size: 16px; }
+
         .aqi-good { color: #4ade80; } 
         .aqi-moderate { color: #facc15; } 
         .aqi-bad { color: #f87171; } 
 
-        /* 新增：橫向滑動天氣預報 */
+        /* 橫向滑動天氣預報 */
         .hourly-title {
             text-align: left;
             font-size: 13px;
@@ -79,17 +84,15 @@
             gap: 10px;
             padding-bottom: 10px;
             margin-bottom: 15px;
-            /* 隱藏滾動條但保持功能 */
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none;  /* IE/Edge */
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
         }
-        .hourly-scroll::-webkit-scrollbar {
-            display: none; /* Chrome/Safari */
-        }
+        .hourly-scroll::-webkit-scrollbar { display: none; }
+        
         .hour-card {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            min-width: 60px; /* 固定寬度 */
+            min-width: 60px;
             padding: 10px 5px;
             display: flex;
             flex-direction: column;
@@ -135,10 +138,17 @@
 
         <div class="info-grid">
             <div class="info-card">
-                <span class="label">🌡️ 現在氣溫</span>
+                <span class="label">🌡️ 氣溫</span>
                 <div>
                     <span class="value" id="temp">--</span>
                     <span class="unit">°C</span>
+                </div>
+            </div>
+            <div class="info-card">
+                <span class="label">💧 濕度</span>
+                <div>
+                    <span class="value" id="humidity">--</span>
+                    <span class="unit">%</span>
                 </div>
             </div>
             <div class="info-card">
@@ -146,6 +156,16 @@
                 <div>
                     <span class="value" id="aqi">--</span>
                     <span class="unit" id="aqi-text"></span>
+                </div>
+            </div>
+            <div class="info-card" style="justify-content: space-evenly;">
+                <div class="sun-time">
+                    <span class="sun-icon">🌅</span>
+                    <span id="sunrise">--:--</span>
+                </div>
+                <div class="sun-time">
+                    <span class="sun-icon">🌇</span>
+                    <span id="sunset">--:--</span>
                 </div>
             </div>
         </div>
@@ -171,7 +191,6 @@
     </div>
 
     <script>
-        // 1. 更新時間
         function updateTime() {
             const now = new Date();
             document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -179,41 +198,45 @@
             document.getElementById('date').innerText = now.toLocaleDateString('zh-TW', options);
         }
 
-        // 天氣代碼轉 Emoji 輔助函式
         function getWeatherIcon(code) {
-            if (code === 0) return "☀️"; // 晴
-            if (code >= 1 && code <= 3) return "⛅"; // 多雲
-            if (code >= 45 && code <= 48) return "🌫️"; // 霧
-            if (code >= 51 && code <= 67) return "🌧️"; // 雨
-            if (code >= 80 && code <= 99) return "⛈️"; // 雷雨
+            if (code === 0) return "☀️";
+            if (code >= 1 && code <= 3) return "⛅";
+            if (code >= 45 && code <= 48) return "🌫️";
+            if (code >= 51 && code <= 67) return "🌧️";
+            if (code >= 80 && code <= 99) return "⛈️";
             return "☁️";
         }
 
-        // 2. 抓取資料
         async function fetchData() {
             try {
-                // 抓取：當前天氣 + 未來2天每小時預報 (確保跨夜也有資料)
-                const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.9908&longitude=120.2133&current=temperature_2m&hourly=temperature_2m,weathercode&forecast_days=2&timezone=auto');
+                // 抓取：氣溫、濕度(新增)、每小時、日出日落(新增)
+                const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.9908&longitude=120.2133&current=temperature_2m,relative_humidity_2m&hourly=temperature_2m,weathercode&daily=sunrise,sunset&forecast_days=2&timezone=auto');
                 const weatherData = await weatherRes.json();
                 
-                // 設定當前氣溫
+                // 1. 設定氣溫
                 document.getElementById('temp').innerText = Math.round(weatherData.current.temperature_2m);
+                
+                // 2. 設定濕度 (新增)
+                document.getElementById('humidity').innerText = weatherData.current.relative_humidity_2m;
 
-                // --- 處理每小時預報 ---
+                // 3. 設定日出日落 (新增)
+                // API 回傳格式為 "2024-01-01T06:35"，我們只需要 "06:35"
+                const sunriseRaw = weatherData.daily.sunrise[0];
+                const sunsetRaw = weatherData.daily.sunset[0];
+                document.getElementById('sunrise').innerText = sunriseRaw.split('T')[1];
+                document.getElementById('sunset').innerText = sunsetRaw.split('T')[1];
+
+                // 4. 設定每小時預報
                 const hourlyContainer = document.getElementById('hourly-container');
-                hourlyContainer.innerHTML = ""; // 清空載入中狀態
+                hourlyContainer.innerHTML = ""; 
+                const currentHourIndex = new Date().getHours(); 
 
-                const currentHourIndex = new Date().getHours(); // 取得現在幾點 (0-23)
-                // 從 API 陣列中，從「現在」這個小時開始，往後抓 24 筆資料
                 for (let i = currentHourIndex; i < currentHourIndex + 24; i++) {
-                    const timeStr = weatherData.hourly.time[i]; // 格式: "2024-01-01T14:00"
+                    const timeStr = weatherData.hourly.time[i];
                     const temp = Math.round(weatherData.hourly.temperature_2m[i]);
                     const code = weatherData.hourly.weathercode[i];
-                    
-                    // 從時間字串取出 "14:00"
                     const hourDisplay = timeStr.split('T')[1];
 
-                    // 建立卡片 HTML
                     const card = document.createElement('div');
                     card.className = 'hour-card';
                     card.innerHTML = `
@@ -224,7 +247,7 @@
                     hourlyContainer.appendChild(card);
                 }
 
-                // 抓取 AQI
+                // 5. 抓取 AQI
                 const airRes = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=22.9908&longitude=120.2133&current=us_aqi&timezone=auto');
                 const airData = await airRes.json();
                 const aqi = airData.current.us_aqi;
